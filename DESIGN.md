@@ -28,6 +28,7 @@
 - Записи о чтении (что, когда и сколько прочитал)
 - Оценка и отзыв на книгу каталога
 - Серии (циклы) книг
+- Владение книгой
 
 Позже может появиться модерация книг, которые пользователь завёл вручную (не из Google Books).
 
@@ -59,7 +60,7 @@ type Book struct {
 	Type      string // text | audio
 	ISBN      *string // уникален, если указан
 	Title     string
-	Year      *int
+	Published *Date
 	SeriesID  *long // many-to-1 к Series
 	SeriesPos *int
 }
@@ -176,6 +177,45 @@ type Review struct {
 }
 ```
 
+### 4.12. AcquisitionType
+
+Тип получения книги. 1-to-many к BookOwnership. Стартовый набор: подарок, покупка, библиотечная аренда, другое.
+
+```
+type AcquisitionType struct {
+	ID   long
+	Name string
+}
+```
+
+### 4.13. Currency
+
+Валюта цены покупки. 1-to-many к BookOwnership.
+
+```
+type Currency struct {
+	ID   long
+	Name string
+}
+```
+
+### 4.14. BookOwnership
+
+Владение книгой пользователем.
+
+```
+type BookOwnership struct {
+	ID                long
+	UserID            long  // many-to-1 к User
+	BookID            long  // many-to-1 к Book
+	Acquired          Date
+	AcquisitionTypeID long  // many-to-1 к AcquisitionType
+	PriceCents        *long // копейки или центы, для покупки
+	CurrencyID        *long // many-to-1 к Currency, для покупки
+	ReturnDate        *Date // для библиотечной аренды
+}
+```
+
 ---
 
 ## 5. Сценарии
@@ -240,6 +280,10 @@ type Review struct {
 
 - читает и меняет владелец
 
+Владение:
+
+- читает и меняет владелец
+
 Пользователь:
 
 - владелец видит свои данные, хэш пароля наружу не отдаём
@@ -262,3 +306,5 @@ type Review struct {
 - СУБД
 - Формат URL и стиль HTTP API
 - Архитектура пакетов Go
+- Сеть магазинов, в которой куплена книга
+- Выбор библиотеки (нужен API карт)
