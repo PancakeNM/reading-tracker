@@ -148,7 +148,7 @@ type ShelfItem struct {
 
 ### 4.10. ReadingLog
 
-Сколько прочитано за один подход. Запись на полке не нужна. Удаление ShelfItem эти записи не удаляет.
+Сколько прочитано за один подход. Не зависит от ShelfItem. Удаление ShelfItem эти записи не удаляет.
 
 ```
 type ReadingLog struct {
