@@ -58,7 +58,7 @@ type User struct {
 type Book struct {
 	ID        long
 	Type      string // text | audio
-	ISBN      *string // уникален, если указан
+	ISBN      *string
 	Title     string
 	Published *Date
 	SeriesID  *long // many-to-1 к Series
