@@ -100,5 +100,8 @@ func (s *ShelfItem) SetFinishDate(d time.Time) error {
 	return nil
 }
 
-// ClearDates очищает даты записи. Заглушка каркаса.
-func (s *ShelfItem) ClearDates() {}
+// ClearDates очищает даты записи. Статус не меняется.
+func (s *ShelfItem) ClearDates() {
+	s.StartDate = nil
+	s.FinishDate = nil
+}
