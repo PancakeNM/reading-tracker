@@ -9,7 +9,11 @@ type Review struct {
 	Text   string
 }
 
-// SetRating задаёт оценку. Заглушка каркаса.
+// SetRating задаёт оценку от 1 до 5.
 func (r *Review) SetRating(rating int) error {
-	return errNotImplemented
+	if rating < 1 || rating > 5 {
+		return ErrInvalidRating
+	}
+	r.Rating = rating
+	return nil
 }
