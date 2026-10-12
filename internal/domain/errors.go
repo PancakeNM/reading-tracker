@@ -17,7 +17,4 @@ var (
 	ErrStartDateMissing      = errors.New("дата окончания без StartDate")
 	ErrFinishDateBeforeStart = errors.New("дата окончания раньше StartDate")
 	ErrInvalidRating         = errors.New("оценка вне 1..5")
-
-	// errNotImplemented — заглушка каркаса. Удаляется после реализации всех методов.
-	errNotImplemented = errors.New("not implemented")
 )

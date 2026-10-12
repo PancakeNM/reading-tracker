@@ -113,17 +113,17 @@
 
 **Independent Test**: ручная сверка + сборка без внешних зависимостей.
 
-- [ ] T027 [US5] Сверить сущности в `internal/domain/*.go` с таблицами [data-model.md](./data-model.md) и `DESIGN.md` §4: 14 сущностей, поля и обязательность (`*` → указатель) совпадают; единственное допустимое отличие — `ShelfItem` (`Status` вместо `StatusID`, добавлены `StartDate`, `FinishDate`). Зафиксировать расхождения, если найдены (SC-006).
+- [X] T027 [US5] Сверить сущности в `internal/domain/*.go` с таблицами [data-model.md](./data-model.md) и `DESIGN.md` §4: 14 сущностей, поля и обязательность (`*` → указатель) совпадают; единственное допустимое отличие — `ShelfItem` (`Status` вместо `StatusID`, добавлены `StartDate`, `FinishDate`). Зафиксировать расхождения, если найдены (SC-006).
 
 ---
 
 ## Phase 8: Polish & Cross-Cutting
 
-- [ ] T028 Удалить временную `errNotImplemented` из `internal/domain/errors.go` (после T026 она нигде не используется). Тесты ЗЕЛЁНЫЕ. Коммит `refactor: remove errNotImplemented`.
-- [ ] T029 [P] `gofmt -l .` (пусто) и `go vet ./...` (чисто) по всему модулю.
+- [X] T028 Удалить временную `errNotImplemented` из `internal/domain/errors.go` (после T026 она нигде не используется). Тесты ЗЕЛЁНЫЕ. Коммит `refactor: remove errNotImplemented`.
+- [X] T029 [P] `gofmt -l .` (пусто) и `go vet ./...` (чисто) по всему модулю.
 - [ ] T030 [P] Детерминированность и гонки: `go test ./internal/domain/ -count=100` и `go test ./internal/domain/ -race` зелёные (SC-003); прогон укладывается в 5 с (SC-004).
-- [ ] T031 Проверить ограничение «только стандартная библиотека»: `go list -deps -f '{{if not .Standard}}{{.ImportPath}}{{end}}' ./internal/domain/` выводит только `github.com/PancakeNM/reading-tracker/internal/domain`; в `go.mod` нет `require`, файла `go.sum` нет (FR-003).
-- [ ] T032 Проверить прослеживаемость Red→Green по `git log --oneline -- internal/domain/`: для каждого из 7 методов коммит `test:` предшествует `feat:`; первый коммит — `chore: scaffold …` (SC-005, принцип II).
+- [X] T031 Проверить ограничение «только стандартная библиотека»: `go list -deps -f '{{if not .Standard}}{{.ImportPath}}{{end}}' ./internal/domain/` выводит только `github.com/PancakeNM/reading-tracker/internal/domain`; в `go.mod` нет `require`, файла `go.sum` нет (FR-003).
+- [X] T032 Проверить прослеживаемость Red→Green по `git log --oneline -- internal/domain/`: для каждого из 7 методов коммит `test:` предшествует `feat:`; первый коммит — `chore: scaffold …` (SC-005, принцип II).
 
 ---
 
