@@ -82,9 +82,22 @@ func (s *ShelfItem) SetStartDate(d time.Time) error {
 	return nil
 }
 
-// SetFinishDate задаёт дату окончания. Заглушка каркаса.
+// SetFinishDate задаёт дату окончания. Статус не меняется.
 func (s *ShelfItem) SetFinishDate(d time.Time) error {
-	return errNotImplemented
+	if s.Status != StatusCompleted && s.Status != StatusDropped {
+		return ErrFinishDateNotAllowed
+	}
+	if d.After(s.currentTime()) {
+		return ErrFinishDateInFuture
+	}
+	if s.StartDate == nil {
+		return ErrStartDateMissing
+	}
+	if d.Before(*s.StartDate) {
+		return ErrFinishDateBeforeStart
+	}
+	s.FinishDate = &d
+	return nil
 }
 
 // ClearDates очищает даты записи. Заглушка каркаса.
