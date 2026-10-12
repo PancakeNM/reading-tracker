@@ -14,9 +14,38 @@ type ReadingLog struct {
 	Comment *string
 }
 
-// UpdateProgress записывает позицию по текстовой книге. Заглушка каркаса.
+// UpdateProgress записывает позицию-страницу и при достижении конца завершает чтение на полке.
 func (l *ReadingLog) UpdateProgress(item *ShelfItem, page, totalPages int) error {
-	return errNotImplemented
+	if item != nil && (item.UserID != l.UserID || item.BookID != l.BookID) {
+		return ErrShelfItemMismatch
+	}
+	if item != nil && (item.Status == StatusCompleted || item.Status == StatusDropped) {
+		return ErrReadingFinished
+	}
+	if page < 0 {
+		return ErrNegativePage
+	}
+	if page > totalPages {
+		return ErrPageExceedsTotal
+	}
+
+	l.Pages = &page
+	if item == nil {
+		return nil
+	}
+
+	t := item.currentTime()
+	if item.Status == StatusWantToRead {
+		item.Status = StatusReading
+	}
+	if item.StartDate == nil {
+		item.StartDate = &t
+	}
+	if page == totalPages {
+		item.Status = StatusCompleted
+		item.FinishDate = &t
+	}
+	return nil
 }
 
 // UpdateAudioProgress записывает позицию по аудиокниге. Заглушка каркаса.
