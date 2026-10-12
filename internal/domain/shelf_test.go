@@ -192,6 +192,76 @@ func TestShelfItem_SetFinishDate(t *testing.T) {
 	}
 }
 
+func TestShelfItem_ClearDates(t *testing.T) {
+	now := time.Date(2026, 10, 15, 12, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name      string
+		status    Status
+		setStart  bool
+		setFinish bool
+	}{
+		{name: "читаю после отката, обе даты", status: StatusReading, setStart: true, setFinish: true},
+		{name: "прочитано только со стартом", status: StatusCompleted, setStart: true},
+		{name: "прочитано только с окончанием", status: StatusCompleted, setFinish: true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			item := newDatedShelf(now, tc.status, tc.setStart, tc.setFinish)
+			before := *item
+			item.ClearDates()
+			before.StartDate = nil
+			before.FinishDate = nil
+			assertShelfEqual(t, before, *item)
+		})
+	}
+
+	t.Run("перечитывание", func(t *testing.T) {
+		t.Parallel()
+
+		item := newDatedShelf(now, StatusReading, true, true)
+		newStart := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
+		if err := item.SetStartDate(newStart); !errors.Is(err, ErrStartDateAfterFinish) {
+			t.Fatalf("до очистки: ошибка %v, ожидалась %v", err, ErrStartDateAfterFinish)
+		}
+		item.ClearDates()
+		if err := item.SetStartDate(newStart); err != nil {
+			t.Fatalf("после очистки: %v", err)
+		}
+		if item.Status != StatusReading {
+			t.Fatalf("статус = %s, ожидался %s", item.Status, StatusReading)
+		}
+		if item.FinishDate != nil {
+			t.Fatalf("дата окончания = %v, ожидалась пустая", item.FinishDate)
+		}
+		if item.StartDate == nil || !item.StartDate.Equal(newStart) {
+			t.Fatalf("дата старта = %v, ожидалась %v", item.StartDate, newStart)
+		}
+	})
+}
+
+func newDatedShelf(now time.Time, status Status, setStart, setFinish bool) *ShelfItem {
+	item := &ShelfItem{
+		ID:     1,
+		UserID: 10,
+		BookID: 20,
+		Status: status,
+		now:    func() time.Time { return now },
+	}
+	if setStart {
+		s := time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)
+		item.StartDate = &s
+	}
+	if setFinish {
+		f := time.Date(2026, 9, 10, 0, 0, 0, 0, time.UTC)
+		item.FinishDate = &f
+	}
+	return item
+}
+
 func assertShelfUnchanged(t *testing.T, before, got ShelfItem) {
 	t.Helper()
 	assertShelfEqual(t, before, got)
