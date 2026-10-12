@@ -59,7 +59,7 @@
 | `FinishDate` | `*time.Time` | дата окончания, `nil` — не задана |
 | `now` | `func() time.Time` | неэкспортируемое; источник текущего момента, `nil` → `time.Now` |
 
-Методы: `ChangeStatus`, `SetStartDate`, `SetFinishDate`.
+Методы: `ChangeStatus`, `SetStartDate`, `SetFinishDate`, `ClearDates`.
 
 **Инварианты:**
 
@@ -82,6 +82,8 @@
 
 ```text
 Ручная смена (ChangeStatus): любой статус → любой статус, даты не меняются.
+Очистка дат (ClearDates): StartDate = nil, FinishDate = nil, статус не меняется.
+  Типичный сценарий перечитывания: ChangeStatus(Reading) → ClearDates() → SetStartDate(новая дата).
 
 Запись прогресса (UpdateProgress / UpdateAudioProgress), если item != nil:
 

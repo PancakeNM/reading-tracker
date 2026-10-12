@@ -15,7 +15,9 @@
 
 - **Decision**: один модуль в корне репозитория `github.com/PancakeNM/reading-tracker`, доменное ядро — пакет `domain` в `internal/domain/`.
 - **Rationale**: выбор пользователя. `internal/` не даёт импортировать ядро извне модуля, путь модуля совпадает с remote `origin`.
-- **Alternatives considered**: модуль сервиса `services/reading/` или несколько модулей по сервисам — преждевременно фиксируют границы сервисов. Отклонение от принципа IV конституции обосновано в Complexity Tracking плана.
+- **Alternatives considered**: модуль сервиса `services/reading/` или несколько модулей по сервисам — преждевременно фиксируют границы сервисов.
+- **Constitution IV**: не нарушается. Принцип требует независимо развёртываемых сервисов, владения данными и отсутствия общей схемы БД. Один Go-модуль не мешает собирать из него несколько независимо развёртываемых бинарников, а сервисов и хранилищ на этом этапе нет.
+- **Risk**: пакет `domain` содержит сущности всех будущих сервисов (пользователи, каталог, полка, отзывы). Если будущие сервисы начнут импортировать его целиком, получится общая модель данных — по сути то, что принцип IV запрещает. При появлении сервисов сущности нужно разнести по пакетам владельцев.
 
 ## R3. Отказ от `Reading`: куда переехало поведение
 
@@ -54,7 +56,7 @@
 
 ## R8. Ошибки
 
-- **Decision**: сигнальные ошибки через `errors.New`, проверка через `errors.Is`. Полный список — в [contracts/domain-api.md](./contracts/domain-api.md) (14 штук).
+- **Decision**: сигнальные ошибки через `errors.New`, проверка через `errors.Is`. Полный список — в [contracts/domain-api.md](./contracts/domain-api.md) (14 штук). Плюс временная неэкспортируемая `errNotImplemented` для заглушек каркаса (R11); удаляется после реализации последнего метода.
 - **Rationale**: FR-021 требует однозначно распознаваемых причин, имя `ErrInvalidRating` задано пользователем.
 - **Alternatives considered**: тип ошибки с кодом — избыточно.
 
@@ -73,6 +75,7 @@
 
 - **Decision**: на каждый метод — функция `Test<Сущность>_<Метод>` с таблицей и `t.Run(tc.name, …)`, в каждом подтесте `t.Parallel()`. Тесты по файлам: `shelf_test.go`, `reading_log_test.go`, `review_test.go`.
 - **Commit sequence** (принцип II):
-  1. `feat: add domain entities and method stubs`: структуры, `Status`, ошибки, заглушки методов, которые ничего не делают и возвращают `nil`;
-  2. пары `test:` → `feat:` для каждого метода по порядку: `ShelfItem.ChangeStatus`, `ShelfItem.SetStartDate`, `ShelfItem.SetFinishDate`, `ReadingLog.UpdateProgress`, `ReadingLog.UpdateAudioProgress`, `Review.SetRating`.
-- **Rationale**: заглушки позволяют фазе Red падать на проверках, а не на компиляции. `ShelfItem` идёт первым, потому что `ReadingLog` опирается на его состояние.
+  1. `chore: scaffold domain entities and method stubs`: структуры, `Status`, ошибки, заглушки 7 методов. Заглушки без логики: методы с ошибкой возвращают `errNotImplemented`, `ClearDates` ничего не делает. Префикс `chore:`, а не `feat:`: в коммите нет реализации поведения.
+  2. пары `test:` → `feat:` для каждого метода в порядке [tasks.md](./tasks.md): `ReadingLog.UpdateProgress`, `ReadingLog.UpdateAudioProgress`, `ShelfItem.ChangeStatus`, `ShelfItem.SetStartDate`, `ShelfItem.SetFinishDate`, `ShelfItem.ClearDates`, `Review.SetRating`;
+  3. `refactor: remove errNotImplemented` на зелёных тестах.
+- **Rationale**: заглушки позволяют фазе Red падать на проверках, а не на компиляции. `errNotImplemented` вместо `nil` нужна, чтобы падал **каждый** подтест: с `return nil` успешные случаи без изменений состояния (например, смена на тот же статус) проходили бы на пустой заглушке и ничего бы не доказывали. По той же причине в таблице `ClearDates` нет случая «даты и так пустые».

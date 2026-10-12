@@ -42,7 +42,7 @@ go test ./internal/domain/ -race           # гонки при t.Parallel() (н�
 git log --oneline -- internal/domain/
 ```
 
-Для каждого из шести методов коммит `test: add failing tests for <Сущность>.<Метод>` идёт раньше `feat: implement <Сущность>.<Метод> logic`. Воспроизвести фазу Red:
+Для каждого из семи методов коммит `test: add failing tests for <Сущность>.<Метод>` идёт раньше `feat: implement <Сущность>.<Метод> logic`. Воспроизвести фазу Red:
 
 ```powershell
 git checkout <hash коммита test:>

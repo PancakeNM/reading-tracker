@@ -8,7 +8,7 @@
 
 Создать Go-модуль с чистым доменным ядром: описать сущности `DESIGN.md` §4 как структуры данных и добавить поведение в три из них.
 
-- `ShelfItem` — статус-перечисление и даты; методы `ChangeStatus`, `SetStartDate`, `SetFinishDate`.
+- `ShelfItem` — статус-перечисление и даты; методы `ChangeStatus`, `SetStartDate`, `SetFinishDate`, `ClearDates`.
 - `ReadingLog` — запись прогресса по тексту (`UpdateProgress`) и по аудио (`UpdateAudioProgress`). Методы получают необязательный `*ShelfItem` и общий объём, проверяют статус полки и автоматически завершают чтение на полке при достижении конца.
 - `Review` — `SetRating` с проверкой 1–5 (`ErrInvalidRating`).
 
@@ -24,7 +24,7 @@
 **Project Type**: библиотека-пакет внутри модуля (доменный слой будущего бэкенда)
 **Performance Goals**: полный прогон тестов ядра не дольше 5 с (SC-004)
 **Constraints**: нет сети, БД, HTTP и сторонних модулей (`go.mod` без `require`, нет `go.sum`); ядро не зависит от инфраструктуры (FR-003)
-**Scale/Scope**: 14 сущностей `DESIGN.md`, 6 методов с поведением в 3 сущностях, 14 сигнальных ошибок
+**Scale/Scope**: 14 сущностей `DESIGN.md`, 7 методов с поведением в 3 сущностях, 14 сигнальных ошибок
 
 Все неизвестные закрыты в [research.md](./research.md) (R1–R11). Открытых NEEDS CLARIFICATION нет.
 
@@ -34,14 +34,14 @@
 
 | Принцип | Статус | Как соблюдается |
 |---------|--------|-----------------|
-| I. Test-First Development | PASS | Для каждого из 6 методов тесты пишутся и падают раньше реализации. Заглушки не содержат логики (R11). |
-| II. Traceable Red→Green Commits | PASS | Каркас с заглушками, затем 6 пар `test:` → `feat:` в порядке из R11. Без squash, amend и rebase. |
+| I. Test-First Development | PASS | Для каждого из 7 методов тесты пишутся и падают раньше реализации. Заглушки не содержат логики и возвращают `errNotImplemented`, поэтому на них падает каждый подтест (R11). |
+| II. Traceable Red→Green Commits | PASS | Каркас `chore: scaffold …` (без реализации), затем 7 пар `test:` → `feat:` в порядке R11 / [tasks.md](./tasks.md), затем `refactor:` на зелёных тестах. Без squash, amend и rebase. |
 | III. Separation of Tests | PASS | Тесты в `*_test.go` (`shelf_test.go`, `reading_log_test.go`, `review_test.go`); Go исключает их из production-сборки. |
-| IV. Microservices Architecture | JUSTIFIED DEVIATION | Пока сервисов нет: один модуль в корне, ядро в `internal/domain` (выбор пользователя, R2). См. Complexity Tracking. |
+| IV. Microservices Architecture | PASS (с риском) | Один модуль в корне, ядро в `internal/domain` (выбор пользователя, R2). Требования IV не нарушены: сервисов и хранилищ на этапе нет, из одного модуля можно собрать независимо развёртываемые сервисы. **Риск**: общий пакет `domain` с сущностями всех будущих сервисов может стать общей моделью данных. При появлении сервисов сущности разносятся по пакетам владельцев (R2). |
 | V. Contract-First HTTP API | N/A (этап) | HTTP исключён указанием пользователя. Контракт — Go API пакета ([contracts/domain-api.md](./contracts/domain-api.md)), покрывается тестами до реализации. |
 | Source of Truth | PASS | Сущности `DESIGN.md` §4 перенесены. Расхождения (`ShelfItem` с датами и статусом «брошено», позиция в `ReadingLog`) взяты из указаний чата, имеющих приоритет, и записаны в spec Assumptions. Инвариант §7.5 (оценка 1–5) покрыт тестами `Review.SetRating`. |
 
-**Post-design re-check**: после Phase 1 нарушений не добавилось. Требования FR-001 – FR-025 отражены в [data-model.md](./data-model.md) и [contracts/domain-api.md](./contracts/domain-api.md).
+**Post-design re-check**: после Phase 1 нарушений не добавилось. Требования FR-001 – FR-026 отражены в [data-model.md](./data-model.md) и [contracts/domain-api.md](./contracts/domain-api.md).
 
 ## Project Structure
 
@@ -71,11 +71,11 @@ internal/
     ├── book.go                # Book, BookType, TextBook, AudioBook
     ├── author.go              # Author, BookAuthor
     ├── series.go              # Series
-    ├── shelf.go               # ReadingStatus, Status, ShelfItem + ChangeStatus, SetStartDate, SetFinishDate
+    ├── shelf.go               # ReadingStatus, Status, ShelfItem + ChangeStatus, SetStartDate, SetFinishDate, ClearDates
     ├── reading_log.go         # ReadingLog + UpdateProgress, UpdateAudioProgress
     ├── review.go              # Review + SetRating
     ├── ownership.go           # AcquisitionType, Currency, BookOwnership
-    ├── errors.go              # сигнальные ошибки
+    ├── errors.go              # сигнальные ошибки (+ временная errNotImplemented для заглушек)
     ├── shelf_test.go          # тесты ShelfItem (package domain)
     ├── reading_log_test.go    # тесты ReadingLog (package domain)
     └── review_test.go         # тесты Review (package domain)
@@ -85,6 +85,4 @@ internal/
 
 ## Complexity Tracking
 
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| Принцип IV: один модуль в корне вместо отдельного модуля сервиса | Выбор пользователя. На этапе только доменное ядро без развёртываемых сервисов, границы сервисов ещё не определены. | Модуль `services/reading/` или раскладка по нескольким сервисам фиксирует границы сервисов раньше, чем они спроектированы. Ядро в `internal/` можно перенести в модуль сервиса без изменения API. |
+Нарушений конституции, требующих обоснования, нет. Выбор одного модуля в корне и связанный с ним риск описаны в строке IV проверки по конституции и в [research.md](./research.md) R2.
