@@ -100,7 +100,7 @@
 
 **Independent Test**: вызвать с граничными и недопустимыми значениями, проверить результат и неизменность при ошибке.
 
-- [ ] T025 [US4] Табличные тесты `TestReview_SetRating` в `internal/domain/review_test.go`. Случаи: 1, 3, 5 (успех, `r.Rating` установлен); 0, 6, −1 → `ErrInvalidRating` (оценка не изменилась). `go test -run TestReview_SetRating` ПАДАЕТ. Коммит `test: add failing tests for Review.SetRating`.
+- [X] T025 [US4] Табличные тесты `TestReview_SetRating` в `internal/domain/review_test.go`. Случаи: 1, 3, 5 (успех, `r.Rating` установлен); 0, 6, −1 → `ErrInvalidRating` (оценка не изменилась). `go test -run TestReview_SetRating` ПАДАЕТ. Коммит `test: add failing tests for Review.SetRating`.
 - [ ] T026 [US4] Реализовать `SetRating` в `internal/domain/review.go`: `rating<1 || rating>5` → `ErrInvalidRating`; иначе `r.Rating = rating`. Тесты ЗЕЛЁНЫЕ. Коммит `feat: implement Review.SetRating logic`.
 
 **Checkpoint**: все 7 методов реализованы по TDD.
