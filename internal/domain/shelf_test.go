@@ -125,6 +125,73 @@ func TestShelfItem_SetStartDate(t *testing.T) {
 	}
 }
 
+func TestShelfItem_SetFinishDate(t *testing.T) {
+	now := time.Date(2026, 10, 15, 12, 0, 0, 0, time.UTC)
+	start := time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)
+	between := time.Date(2026, 10, 5, 0, 0, 0, 0, time.UTC)
+	earlier := time.Date(2026, 8, 31, 0, 0, 0, 0, time.UTC)
+	future := time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name     string
+		status   Status
+		setStart bool
+		date     time.Time
+		wantErr  error
+	}{
+		{name: "прочитано, дата между стартом и сейчас", status: StatusCompleted, setStart: true, date: between},
+		{name: "брошено, дата между стартом и сейчас", status: StatusDropped, setStart: true, date: between},
+		{name: "дата равна дате старта", status: StatusDropped, setStart: true, date: start},
+		{name: "статус читаю", status: StatusReading, setStart: true, date: between, wantErr: ErrFinishDateNotAllowed},
+		{name: "статус хочу прочитать", status: StatusWantToRead, setStart: true, date: between, wantErr: ErrFinishDateNotAllowed},
+		{name: "дата в 2030 году", status: StatusCompleted, setStart: true, date: future, wantErr: ErrFinishDateInFuture},
+		{name: "нет даты старта", status: StatusCompleted, date: between, wantErr: ErrStartDateMissing},
+		{name: "дата раньше даты старта", status: StatusCompleted, setStart: true, date: earlier, wantErr: ErrFinishDateBeforeStart},
+		{name: "порядок: читаю и дата в 2030 году", status: StatusReading, setStart: true, date: future, wantErr: ErrFinishDateNotAllowed},
+		{name: "порядок: прочитано без даты старта и дата в 2030 году", status: StatusCompleted, date: future, wantErr: ErrFinishDateInFuture},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			item := &ShelfItem{
+				ID:     1,
+				UserID: 10,
+				BookID: 20,
+				Status: tc.status,
+				now:    func() time.Time { return now },
+			}
+			if tc.setStart {
+				s := start
+				item.StartDate = &s
+			}
+			before := *item
+			oldFinish := item.FinishDate
+
+			err := item.SetFinishDate(tc.date)
+			if tc.wantErr != nil {
+				if !errors.Is(err, tc.wantErr) {
+					t.Fatalf("ошибка %v, ожидалась %v", err, tc.wantErr)
+				}
+				assertShelfUnchanged(t, before, *item)
+				return
+			}
+			if err != nil {
+				t.Fatalf("неожиданная ошибка: %v", err)
+			}
+			if item.FinishDate == nil || !item.FinishDate.Equal(tc.date) {
+				t.Fatalf("дата окончания = %v, ожидалась %v", item.FinishDate, tc.date)
+			}
+			if item.FinishDate == oldFinish || item.FinishDate == item.StartDate {
+				t.Fatal("дата окончания записана через старый указатель")
+			}
+			before.FinishDate = item.FinishDate
+			assertShelfEqual(t, before, *item)
+		})
+	}
+}
+
 func assertShelfUnchanged(t *testing.T, before, got ShelfItem) {
 	t.Helper()
 	assertShelfEqual(t, before, got)
