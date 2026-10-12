@@ -70,9 +70,16 @@ func (s *ShelfItem) ChangeStatus(status Status) error {
 	return nil
 }
 
-// SetStartDate задаёт дату старта. Заглушка каркаса.
+// SetStartDate задаёт дату старта. Статус не меняется.
 func (s *ShelfItem) SetStartDate(d time.Time) error {
-	return errNotImplemented
+	if d.After(s.currentTime()) {
+		return ErrStartDateInFuture
+	}
+	if s.FinishDate != nil && d.After(*s.FinishDate) {
+		return ErrStartDateAfterFinish
+	}
+	s.StartDate = &d
+	return nil
 }
 
 // SetFinishDate задаёт дату окончания. Заглушка каркаса.
