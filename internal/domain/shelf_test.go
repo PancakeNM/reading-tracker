@@ -60,6 +60,71 @@ func TestShelfItem_ChangeStatus(t *testing.T) {
 	}
 }
 
+func TestShelfItem_SetStartDate(t *testing.T) {
+	now := time.Date(2026, 10, 15, 12, 0, 0, 0, time.UTC)
+	past := time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)
+	sameAsFinish := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
+	finishEarly := time.Date(2026, 9, 10, 0, 0, 0, 0, time.UTC)
+	afterFinish := time.Date(2026, 9, 20, 0, 0, 0, 0, time.UTC)
+	future := time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name      string
+		status    Status
+		date      time.Time
+		setFinish bool
+		finish    time.Time
+		wantErr   error
+	}{
+		{name: "дата в прошлом", status: StatusWantToRead, date: past},
+		{name: "дата равна текущему моменту", status: StatusReading, date: now},
+		{name: "дата равна дате окончания", status: StatusCompleted, date: sameAsFinish, setFinish: true, finish: sameAsFinish},
+		{name: "дата в 2030 году", status: StatusReading, date: future, wantErr: ErrStartDateInFuture},
+		{name: "дата позже даты окончания", status: StatusReading, date: afterFinish, setFinish: true, finish: finishEarly, wantErr: ErrStartDateAfterFinish},
+		{name: "порядок: дата в 2030 году и дата окончания раньше", status: StatusCompleted, date: future, setFinish: true, finish: finishEarly, wantErr: ErrStartDateInFuture},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			item := &ShelfItem{
+				ID:     1,
+				UserID: 10,
+				BookID: 20,
+				Status: tc.status,
+				now:    func() time.Time { return now },
+			}
+			if tc.setFinish {
+				f := tc.finish
+				item.FinishDate = &f
+			}
+			before := *item
+			oldStart := item.StartDate
+
+			err := item.SetStartDate(tc.date)
+			if tc.wantErr != nil {
+				if !errors.Is(err, tc.wantErr) {
+					t.Fatalf("ошибка %v, ожидалась %v", err, tc.wantErr)
+				}
+				assertShelfUnchanged(t, before, *item)
+				return
+			}
+			if err != nil {
+				t.Fatalf("неожиданная ошибка: %v", err)
+			}
+			if item.StartDate == nil || !item.StartDate.Equal(tc.date) {
+				t.Fatalf("дата старта = %v, ожидалась %v", item.StartDate, tc.date)
+			}
+			if item.StartDate == oldStart {
+				t.Fatal("дата старта записана через старый указатель")
+			}
+			before.StartDate = item.StartDate
+			assertShelfEqual(t, before, *item)
+		})
+	}
+}
+
 func assertShelfUnchanged(t *testing.T, before, got ShelfItem) {
 	t.Helper()
 	assertShelfEqual(t, before, got)
