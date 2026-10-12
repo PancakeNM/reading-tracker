@@ -341,3 +341,290 @@ func TestReadingLog_UpdateProgress(t *testing.T) {
 		})
 	}
 }
+
+func TestReadingLog_UpdateAudioProgress(t *testing.T) {
+	now := time.Date(2026, 10, 15, 12, 0, 0, 0, time.UTC)
+	start := time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)
+
+	const (
+		userID int64 = 10
+		bookID int64 = 20
+	)
+
+	tests := []struct {
+		name         string
+		seconds      int64
+		totalSeconds int64
+		itemNil      bool
+		status       Status
+		userID       int64
+		bookID       int64
+		setStart     bool
+		start        time.Time
+		wantErr      error
+		wantStatus   Status
+		wantSeconds  int64
+		startIsNow   bool
+		finishIsNow  bool
+		finishNil    bool
+		samePointers bool
+	}{
+		{
+			name:         "12 000 из 36 000",
+			seconds:      12000,
+			totalSeconds: 36000,
+			status:       StatusReading,
+			userID:       userID,
+			bookID:       bookID,
+			setStart:     true,
+			start:        start,
+			wantStatus:   StatusReading,
+			wantSeconds:  12000,
+			finishNil:    true,
+		},
+		{
+			name:         "0 секунд",
+			seconds:      0,
+			totalSeconds: 36000,
+			status:       StatusReading,
+			userID:       userID,
+			bookID:       bookID,
+			setStart:     true,
+			start:        start,
+			wantStatus:   StatusReading,
+			wantSeconds:  0,
+			finishNil:    true,
+		},
+		{
+			name:         "36 000 из 36 000, дата старта задана",
+			seconds:      36000,
+			totalSeconds: 36000,
+			status:       StatusReading,
+			userID:       userID,
+			bookID:       bookID,
+			setStart:     true,
+			start:        start,
+			wantStatus:   StatusCompleted,
+			wantSeconds:  36000,
+			finishIsNow:  true,
+		},
+		{
+			name:         "хочу прочитать, 600 с",
+			seconds:      600,
+			totalSeconds: 36000,
+			status:       StatusWantToRead,
+			userID:       userID,
+			bookID:       bookID,
+			wantStatus:   StatusReading,
+			wantSeconds:  600,
+			startIsNow:   true,
+			finishNil:    true,
+		},
+		{
+			name:         "читаю без даты старта, 36 000 из 36 000",
+			seconds:      36000,
+			totalSeconds: 36000,
+			status:       StatusReading,
+			userID:       userID,
+			bookID:       bookID,
+			wantStatus:   StatusCompleted,
+			wantSeconds:  36000,
+			startIsNow:   true,
+			finishIsNow:  true,
+			samePointers: true,
+		},
+		{
+			name:         "полки нет",
+			seconds:      36000,
+			totalSeconds: 36000,
+			itemNil:      true,
+			wantSeconds:  36000,
+		},
+		{
+			name:         "−1 с",
+			seconds:      -1,
+			totalSeconds: 36000,
+			status:       StatusReading,
+			userID:       userID,
+			bookID:       bookID,
+			setStart:     true,
+			start:        start,
+			wantErr:      ErrNegativeSeconds,
+		},
+		{
+			name:         "36 001 из 36 000",
+			seconds:      36001,
+			totalSeconds: 36000,
+			status:       StatusReading,
+			userID:       userID,
+			bookID:       bookID,
+			setStart:     true,
+			start:        start,
+			wantErr:      ErrSecondsExceedTotal,
+		},
+		{
+			name:         "статус прочитано",
+			seconds:      600,
+			totalSeconds: 36000,
+			status:       StatusCompleted,
+			userID:       userID,
+			bookID:       bookID,
+			setStart:     true,
+			start:        start,
+			wantErr:      ErrReadingFinished,
+		},
+		{
+			name:         "статус брошено",
+			seconds:      600,
+			totalSeconds: 36000,
+			status:       StatusDropped,
+			userID:       userID,
+			bookID:       bookID,
+			setStart:     true,
+			start:        start,
+			wantErr:      ErrReadingFinished,
+		},
+		{
+			name:         "чужой пользователь",
+			seconds:      600,
+			totalSeconds: 36000,
+			status:       StatusReading,
+			userID:       99,
+			bookID:       bookID,
+			setStart:     true,
+			start:        start,
+			wantErr:      ErrShelfItemMismatch,
+		},
+		{
+			name:         "чужая книга",
+			seconds:      600,
+			totalSeconds: 36000,
+			status:       StatusReading,
+			userID:       userID,
+			bookID:       99,
+			setStart:     true,
+			start:        start,
+			wantErr:      ErrShelfItemMismatch,
+		},
+		{
+			name:         "порядок: брошено и −1 с",
+			seconds:      -1,
+			totalSeconds: 36000,
+			status:       StatusDropped,
+			userID:       userID,
+			bookID:       bookID,
+			setStart:     true,
+			start:        start,
+			wantErr:      ErrReadingFinished,
+		},
+		{
+			name:         "порядок: чужая полка в статусе брошено",
+			seconds:      600,
+			totalSeconds: 36000,
+			status:       StatusDropped,
+			userID:       99,
+			bookID:       bookID,
+			setStart:     true,
+			start:        start,
+			wantErr:      ErrShelfItemMismatch,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			pages := 40
+			seconds := int64(15)
+			comment := "заметка"
+			log := &ReadingLog{
+				ID:      1,
+				UserID:  userID,
+				BookID:  bookID,
+				Date:    time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC),
+				Pages:   &pages,
+				Seconds: &seconds,
+				Comment: &comment,
+			}
+
+			var item *ShelfItem
+			if !tc.itemNil {
+				item = &ShelfItem{
+					ID:     7,
+					UserID: tc.userID,
+					BookID: tc.bookID,
+					Status: tc.status,
+					now:    func() time.Time { return now },
+				}
+				if tc.setStart {
+					s := tc.start
+					item.StartDate = &s
+				}
+			}
+
+			beforeLog := *log
+			var beforeItem ShelfItem
+			if item != nil {
+				beforeItem = *item
+			}
+			startPtr := (*time.Time)(nil)
+			if item != nil {
+				startPtr = item.StartDate
+			}
+
+			err := log.UpdateAudioProgress(item, tc.seconds, tc.totalSeconds)
+			if tc.wantErr != nil {
+				if !errors.Is(err, tc.wantErr) {
+					t.Fatalf("ошибка %v, ожидалась %v", err, tc.wantErr)
+				}
+				if !reflect.DeepEqual(beforeLog, *log) {
+					t.Fatalf("запись о чтении изменилась: %+v", log)
+				}
+				if item != nil {
+					beforeItem.now = nil
+					gotItem := *item
+					gotItem.now = nil
+					if !reflect.DeepEqual(beforeItem, gotItem) {
+						t.Fatalf("полка изменилась: %+v", item)
+					}
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("неожиданная ошибка: %v", err)
+			}
+			if log.Pages != beforeLog.Pages {
+				t.Fatal("изменились страницы")
+			}
+			if log.Seconds == beforeLog.Seconds || log.Seconds == nil || *log.Seconds != tc.wantSeconds {
+				t.Fatalf("секунды = %v, ожидались %d", log.Seconds, tc.wantSeconds)
+			}
+			if log.Comment != beforeLog.Comment || !log.Date.Equal(beforeLog.Date) {
+				t.Fatal("изменились комментарий или дата записи")
+			}
+			if tc.itemNil {
+				return
+			}
+			if item.Status != tc.wantStatus {
+				t.Fatalf("статус = %s, ожидался %s", item.Status, tc.wantStatus)
+			}
+			if tc.finishNil && item.FinishDate != nil {
+				t.Fatalf("дата окончания = %v, ожидалась пустая", item.FinishDate)
+			}
+			if tc.finishIsNow && (item.FinishDate == nil || !item.FinishDate.Equal(now)) {
+				t.Fatalf("дата окончания = %v, ожидалась %v", item.FinishDate, now)
+			}
+			if tc.startIsNow && (item.StartDate == nil || !item.StartDate.Equal(now)) {
+				t.Fatalf("дата старта = %v, ожидалась %v", item.StartDate, now)
+			}
+			if tc.setStart && !tc.startIsNow {
+				if item.StartDate != startPtr || item.StartDate == nil || !item.StartDate.Equal(tc.start) {
+					t.Fatalf("дата старта изменилась: %v", item.StartDate)
+				}
+			}
+			if tc.samePointers && item.StartDate != item.FinishDate {
+				t.Fatal("дата старта и дата окончания должны указывать на одно и то же значение текущего момента")
+			}
+		})
+	}
+}
