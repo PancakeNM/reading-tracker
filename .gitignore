@@ -1,2 +1,16 @@
 .cursor/
 .git/
+
+# Go
+*.exe
+*.test
+vendor/
+*.out
+
+# Universal
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/

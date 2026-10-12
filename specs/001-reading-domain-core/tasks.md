@@ -25,8 +25,8 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 Создать `go.mod` в корне репозитория: `module github.com/PancakeNM/reading-tracker`, директива `go 1.22`, без секции `require` (ограничение этапа: только стандартная библиотека).
-- [ ] T002 Создать каталог `internal/domain/` для пакета `domain`.
+- [X] T001 Создать `go.mod` в корне репозитория: `module github.com/PancakeNM/reading-tracker`, директива `go 1.22`, без секции `require` (ограничение этапа: только стандартная библиотека).
+- [X] T002 Создать каталог `internal/domain/` для пакета `domain`.
 
 ---
 
@@ -34,16 +34,16 @@
 
 **Цель**: описать все сущности `DESIGN.md` §4, тип `Status`, сигнальные ошибки и заглушки всех 7 методов. Заглушки без логики: методы с ошибкой возвращают неэкспортируемую `errNotImplemented`, `ClearDates` ничего не делает. Так на заглушке падает **каждый** подтест (R11). Вся фаза — ОДИН коммит `chore: scaffold domain entities and method stubs` (реализации поведения нет, поэтому `chore:`, а не `feat:`).
 
-- [ ] T003 [P] Сущность `User` в `internal/domain/user.go`: `ID int64`, `Username string` (уникальный), `Password string` (хэш).
-- [ ] T004 [P] Книги в `internal/domain/book.go`: `BookType` со строковыми константами `BookTypeText = "text"`, `BookTypeAudio = "audio"`; `Book` (`ID int64`, `Type BookType`, `ISBN *string`, `Title string`, `Published *time.Time`, `SeriesID *int64`, `SeriesPos *int`); `TextBook` (`ID int64`, `EBook bool`, `TotalPages int`); `AudioBook` (`ID int64`, `Narrator *string`, `Duration int64` — секунды).
-- [ ] T005 [P] Авторство в `internal/domain/author.go`: `Author` (`ID int64`, `Name string`); `BookAuthor` (`AuthorID int64`, `BookID int64`).
-- [ ] T006 [P] Серия в `internal/domain/series.go`: `Series` (`ID int64`, `Name string`).
-- [ ] T007 [P] Владение в `internal/domain/ownership.go`: `AcquisitionType` (`ID int64`, `Name string`); `Currency` (`ID int64`, `Name string`); `BookOwnership` (`ID int64`, `UserID int64`, `BookID int64`, `Acquired time.Time`, `AcquisitionTypeID int64`, `PriceCents *int64`, `CurrencyID *int64`, `ReturnDate *time.Time`).
-- [ ] T008 Полка и статус в `internal/domain/shelf.go`: справочник `ReadingStatus` (`ID int64`, `Name string`); тип `Status int` с константами через `iota` — `StatusWantToRead`=0, `StatusReading`=1, `StatusCompleted`=2, `StatusDropped`=3; метод `String()` (`"want_to_read"`, `"reading"`, `"completed"`, `"dropped"`); приватная проверка допустимости значения; структура `ShelfItem` (`ID int64`, `UserID int64`, `BookID int64`, `Status Status`, `StartDate *time.Time`, `FinishDate *time.Time`, неэкспортируемое `now func() time.Time`); приватный помощник `currentTime()` (возвращает `time.Now()`, если `now == nil`); заглушки `ChangeStatus(status Status) error`, `SetStartDate(d time.Time) error`, `SetFinishDate(d time.Time) error` — возвращают `errNotImplemented`; заглушка `ClearDates()` — пустое тело.
-- [ ] T009 Запись о чтении в `internal/domain/reading_log.go`: структура `ReadingLog` (`ID int64`, `UserID int64`, `BookID int64`, `Date time.Time`, `Pages *int`, `Seconds *int64`, `Comment *string`; `Pages`/`Seconds` — позиция, а не прирост); заглушки `UpdateProgress(item *ShelfItem, page, totalPages int) error`, `UpdateAudioProgress(item *ShelfItem, seconds, totalSeconds int64) error` — возвращают `errNotImplemented`.
-- [ ] T010 Отзыв в `internal/domain/review.go`: структура `Review` (`ID int64`, `BookID int64`, `UserID int64`, `Rating int`, `Text string`); заглушка `SetRating(rating int) error` — возвращает `errNotImplemented`.
-- [ ] T011 Ошибки в `internal/domain/errors.go` (через `errors.New`, см. [contracts/domain-api.md](./contracts/domain-api.md)): экспортируемые `ErrShelfItemMismatch`, `ErrReadingFinished`, `ErrNegativePage`, `ErrPageExceedsTotal`, `ErrNegativeSeconds`, `ErrSecondsExceedTotal`, `ErrInvalidStatus`, `ErrStartDateInFuture`, `ErrStartDateAfterFinish`, `ErrFinishDateNotAllowed`, `ErrFinishDateInFuture`, `ErrStartDateMissing`, `ErrFinishDateBeforeStart`, `ErrInvalidRating`; временная неэкспортируемая `errNotImplemented` (удаляется в T028).
-- [ ] T012 Проверить сборку: `go build ./...`, `go vet ./...`, `gofmt -l .` (пусто). Создать коммит `chore: scaffold domain entities and method stubs`.
+- [X] T003 [P] Сущность `User` в `internal/domain/user.go`: `ID int64`, `Username string` (уникальный), `Password string` (хэш).
+- [X] T004 [P] Книги в `internal/domain/book.go`: `BookType` со строковыми константами `BookTypeText = "text"`, `BookTypeAudio = "audio"`; `Book` (`ID int64`, `Type BookType`, `ISBN *string`, `Title string`, `Published *time.Time`, `SeriesID *int64`, `SeriesPos *int`); `TextBook` (`ID int64`, `EBook bool`, `TotalPages int`); `AudioBook` (`ID int64`, `Narrator *string`, `Duration int64` — секунды).
+- [X] T005 [P] Авторство в `internal/domain/author.go`: `Author` (`ID int64`, `Name string`); `BookAuthor` (`AuthorID int64`, `BookID int64`).
+- [X] T006 [P] Серия в `internal/domain/series.go`: `Series` (`ID int64`, `Name string`).
+- [X] T007 [P] Владение в `internal/domain/ownership.go`: `AcquisitionType` (`ID int64`, `Name string`); `Currency` (`ID int64`, `Name string`); `BookOwnership` (`ID int64`, `UserID int64`, `BookID int64`, `Acquired time.Time`, `AcquisitionTypeID int64`, `PriceCents *int64`, `CurrencyID *int64`, `ReturnDate *time.Time`).
+- [X] T008 Полка и статус в `internal/domain/shelf.go`: справочник `ReadingStatus` (`ID int64`, `Name string`); тип `Status int` с константами через `iota` — `StatusWantToRead`=0, `StatusReading`=1, `StatusCompleted`=2, `StatusDropped`=3; метод `String()` (`"want_to_read"`, `"reading"`, `"completed"`, `"dropped"`); приватная проверка допустимости значения; структура `ShelfItem` (`ID int64`, `UserID int64`, `BookID int64`, `Status Status`, `StartDate *time.Time`, `FinishDate *time.Time`, неэкспортируемое `now func() time.Time`); приватный помощник `currentTime()` (возвращает `time.Now()`, если `now == nil`); заглушки `ChangeStatus(status Status) error`, `SetStartDate(d time.Time) error`, `SetFinishDate(d time.Time) error` — возвращают `errNotImplemented`; заглушка `ClearDates()` — пустое тело.
+- [X] T009 Запись о чтении в `internal/domain/reading_log.go`: структура `ReadingLog` (`ID int64`, `UserID int64`, `BookID int64`, `Date time.Time`, `Pages *int`, `Seconds *int64`, `Comment *string`; `Pages`/`Seconds` — позиция, а не прирост); заглушки `UpdateProgress(item *ShelfItem, page, totalPages int) error`, `UpdateAudioProgress(item *ShelfItem, seconds, totalSeconds int64) error` — возвращают `errNotImplemented`.
+- [X] T010 Отзыв в `internal/domain/review.go`: структура `Review` (`ID int64`, `BookID int64`, `UserID int64`, `Rating int`, `Text string`); заглушка `SetRating(rating int) error` — возвращает `errNotImplemented`.
+- [X] T011 Ошибки в `internal/domain/errors.go` (через `errors.New`, см. [contracts/domain-api.md](./contracts/domain-api.md)): экспортируемые `ErrShelfItemMismatch`, `ErrReadingFinished`, `ErrNegativePage`, `ErrPageExceedsTotal`, `ErrNegativeSeconds`, `ErrSecondsExceedTotal`, `ErrInvalidStatus`, `ErrStartDateInFuture`, `ErrStartDateAfterFinish`, `ErrFinishDateNotAllowed`, `ErrFinishDateInFuture`, `ErrStartDateMissing`, `ErrFinishDateBeforeStart`, `ErrInvalidRating`; временная неэкспортируемая `errNotImplemented` (удаляется в T028).
+- [X] T012 Проверить сборку: `go build ./...`, `go vet ./...`, `gofmt -l .` (пусто). Создать коммит `chore: scaffold domain entities and method stubs`.
 
 **Checkpoint**: пакет компилируется, все структуры и заглушки на месте. Можно начинать любую историю.
 
