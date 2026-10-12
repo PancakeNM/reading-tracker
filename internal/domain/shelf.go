@@ -61,9 +61,13 @@ func (s *ShelfItem) currentTime() time.Time {
 	return s.now()
 }
 
-// ChangeStatus меняет статус записи. Заглушка каркаса.
+// ChangeStatus меняет статус записи. Любой переход допустим, даты не меняются.
 func (s *ShelfItem) ChangeStatus(status Status) error {
-	return errNotImplemented
+	if !status.valid() {
+		return ErrInvalidStatus
+	}
+	s.Status = status
+	return nil
 }
 
 // SetStartDate задаёт дату старта. Заглушка каркаса.
